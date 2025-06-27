@@ -202,7 +202,7 @@ func (wd *WinDivertHandle) recvLoop(packetChan chan<- *Packet) {
 	for wd.Open {
 		packet, err := wd.Recv()
 		if err != nil {
-			panic(err)
+			continue
 			//close(packetChan)
 		}
 
