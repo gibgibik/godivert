@@ -25,8 +25,8 @@ func init() {
 
 // Used to call WinDivert's functions
 type WinDivertHandle struct {
-	handle uintptr
-	open   bool
+	Handle uintptr
+	Open   bool
 }
 
 // LoadDLL loads the WinDivert DLL depending the OS (x64 or x86) and the given DLL path.
@@ -78,8 +78,8 @@ func NewWinDivertHandleWithFlags(filter string, flags uint8) (*WinDivertHandle, 
 	}
 
 	winDivertHandle := &WinDivertHandle{
-		handle: handle,
-		open:   true,
+		Handle: handle,
+		Open:   true,
 	}
 	return winDivertHandle, nil
 }
@@ -87,23 +87,23 @@ func NewWinDivertHandleWithFlags(filter string, flags uint8) (*WinDivertHandle, 
 // Close the Handle
 // See https://reqrypt.org/windivert-doc.html#divert_close
 func (wd *WinDivertHandle) Close() error {
-	_, _, err := winDivertClose.Call(wd.handle)
-	wd.open = false
+	_, _, err := winDivertClose.Call(wd.Handle)
+	wd.Open = false
 	return err
 }
 
 // Divert a packet from the Network Stack
 // https://reqrypt.org/windivert-doc.html#divert_recv
 func (wd *WinDivertHandle) Recv() (*Packet, error) {
-	if !wd.open {
-		return nil, errors.New("can't receive, the handle isn't open")
+	if !wd.Open {
+		return nil, errors.New("can't receive, the Handle isn't Open")
 	}
 
 	packetBuffer := make([]byte, PacketBufferSize)
 
 	var packetLen uint
 	var addr WinDivertAddress
-	success, _, err := winDivertRecv.Call(wd.handle,
+	success, _, err := winDivertRecv.Call(wd.Handle,
 		uintptr(unsafe.Pointer(&packetBuffer[0])),
 		uintptr(PacketBufferSize),
 		uintptr(unsafe.Pointer(&addr)),
@@ -127,11 +127,11 @@ func (wd *WinDivertHandle) Recv() (*Packet, error) {
 func (wd *WinDivertHandle) Send(packet *Packet) (uint, error) {
 	var sendLen uint
 
-	if !wd.open {
-		return 0, errors.New("can't Send, the handle isn't open")
+	if !wd.Open {
+		return 0, errors.New("can't Send, the Handle isn't Open")
 	}
 
-	success, _, err := winDivertSend.Call(wd.handle,
+	success, _, err := winDivertSend.Call(wd.Handle,
 		uintptr(unsafe.Pointer(&(packet.Raw[0]))),
 		uintptr(packet.PacketLen),
 		uintptr(unsafe.Pointer(packet.Addr)),
@@ -196,10 +196,10 @@ func HelperEvalFilter(packet *Packet, filter string) (bool, error) {
 	return true, nil
 }
 
-// A loop that capture packets by calling Recv and sends them on a channel as long as the handle is open
+// A loop that capture packets by calling Recv and sends them on a channel as long as the Handle is Open
 // If Recv() returns an error, the loop is stopped and the channel is closed
 func (wd *WinDivertHandle) recvLoop(packetChan chan<- *Packet) {
-	for wd.open {
+	for wd.Open {
 		packet, err := wd.Recv()
 		if err != nil {
 			//close(packetChan)
@@ -212,8 +212,8 @@ func (wd *WinDivertHandle) recvLoop(packetChan chan<- *Packet) {
 
 // Create a new channel that will be used to pass captured packets and returns it calls recvLoop to maintain a loop
 func (wd *WinDivertHandle) Packets() (chan *Packet, error) {
-	if !wd.open {
-		return nil, errors.New("the handle isn't open")
+	if !wd.Open {
+		return nil, errors.New("the Handle isn't Open")
 	}
 	packetChan := make(chan *Packet, PacketChanCapacity)
 	go wd.recvLoop(packetChan)
