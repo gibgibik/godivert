@@ -2,7 +2,7 @@ package godivert
 
 import (
 	"fmt"
-	"github.com/williamfhe/godivert/header"
+	"github.com/gibgibik/godivert/header"
 	"net"
 )
 
